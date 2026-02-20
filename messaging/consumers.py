@@ -20,10 +20,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         user2 = self.other_user_id
         self.room_name = f"chat_{min(user1, user2)}_{max(user1, user2)}"
 
-        await self.channel_layer.group_add(
-            self.room_name,
-            self.channel_name
-        )
+        await self.channel_layer.group_add(self.room_name,self.channel_name)
 
         await self.accept()
 
@@ -45,11 +42,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
             {
                 "type": "chat_message",
                 "sender_id": self.user.id,
-                "sender": self.user.username,
                 "message": message,
                 "message_id": msg.id,
             }
         )
 
     async def chat_message(self, event):
-        await self.send(text_data=json.dumps({"sender_id": event["sender_id"],"sender": event["sender"],"message": event["message"],"message_id": event["message_id"],}))
+        await self.send(text_data=json.dumps({"type": "chat","sender_id": event["sender_id"],"message": event["message"],"message_id": event["message_id"],}))
+
+    async def mark_read(self, event):
+        await self.send(text_data=json.dumps({"type": "read","sender_id": event["sender_id"],}))

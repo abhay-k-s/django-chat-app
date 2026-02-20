@@ -15,9 +15,7 @@
 
  <div class="d-flex justify-content-between align-items-center mb-3">
         <h6 class="mb-0">Chat with {{ receiver.username }}</h6>
-        <a href="{% url 'user_list' %}" class="btn btn-sm btn-outline-secondary">
-            ← Back
-        </a>
+        <a href="{% url 'user_list' %}" class="btn btn-sm btn-outline-secondary">Back</a>
     </div>
 
     <div id="chat-box" class="bg-white border rounded p-3 mb-3">
@@ -49,42 +47,57 @@ const socket = new WebSocket(
     protocol + window.location.host + "/ws/chat/{{ receiver.id }}/"
 );
 
-window.addEventListener("beforeunload", () => socket.close());
+window.addEventListener("beforeunload", () => {
+    if (socket.readyState === WebSocket.OPEN) socket.close();
+});
 
-socket.onmessage = function(e) {
+socket.onmessage = function (e) {
     const data = JSON.parse(e.data);
 
     if (data.type === "read") {
-        document.querySelectorAll(".tick").forEach(t => t.innerText = "✓✓");
+        const ticks = document.querySelectorAll(".tick");
+        if (ticks.length > 0) {
+            ticks[ticks.length - 1].innerText = "✓✓";
+        }
         return;
     }
 
-    const wrap = document.createElement("div");
-    wrap.classList.add("d-flex", "mb-2");
+    const wrapper = document.createElement("div");
+    wrapper.classList.add("d-flex", "mb-2");
 
     const bubble = document.createElement("div");
     bubble.classList.add("message", "px-3", "py-2", "rounded");
 
     if (data.sender_id == "{{ request.user.id }}") {
-        wrap.classList.add("justify-content-end");
+        wrapper.classList.add("justify-content-end");
         bubble.classList.add("bg-success-subtle", "text-end");
         bubble.innerHTML = data.message + " <span class='tick'>✓</span>";
     } else {
+        wrapper.classList.add("justify-content-start");
         bubble.classList.add("bg-secondary-subtle");
         bubble.innerHTML = data.message;
     }
 
-    wrap.appendChild(bubble);
-    chatBox.appendChild(wrap);
+    wrapper.appendChild(bubble);
+    chatBox.appendChild(wrapper);
     chatBox.scrollTop = chatBox.scrollHeight;
 };
 
 function send() {
     const input = document.getElementById("msg");
-    if (!input.value.trim()) return;
-    socket.send(JSON.stringify({ message: input.value }));
+    const text = input.value.trim();
+    if (!text) return;
+
+    socket.send(JSON.stringify({ message: text }));
     input.value = "";
 }
+
+document.getElementById("msg").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        send();
+    }
+});
 </script>
 
 </body>

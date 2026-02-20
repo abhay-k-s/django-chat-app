@@ -13,7 +13,12 @@
 
 <div class="container py-4" style="max-width:700px;">
 
-    <h6>Chat with {{ receiver.username }}</h6>
+ <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="mb-0">Chat with {{ receiver.username }}</h6>
+        <a href="{% url 'user_list' %}" class="btn btn-sm btn-outline-secondary">
+            ← Back
+        </a>
+    </div>
 
     <div id="chat-box" class="bg-white border rounded p-3 mb-3">
         {% for msg in messages %}

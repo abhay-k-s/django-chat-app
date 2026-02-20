@@ -72,55 +72,75 @@
 </div>
 
 <script>
-    const chatBox = document.getElementById("chat-box");
-    chatBox.scrollTop = chatBox.scrollHeight;
+const chatBox = document.getElementById("chat-box");
 
-    const protocol = window.location.protocol === "https:" ? "wss://" : "ws://";
+// Auto scroll
+chatBox.scrollTop = chatBox.scrollHeight;
 
-    const socket = new WebSocket(
-        protocol + window.location.host + "/ws/chat/{{ receiver.id }}/"
-    );
+// Correct protocol
+const protocol = window.location.protocol === "https:" ? "wss://" : "ws://";
 
-    socket.onmessage = function(e) {
-        const data = JSON.parse(e.data);
+let socket = new WebSocket(
+    protocol + window.location.host + "/ws/chat/{{ receiver.id }}/"
+);
 
-        const wrapper = document.createElement("div");
-        wrapper.classList.add("d-flex", "mb-2");
+// Close old socket if navigating away
+window.addEventListener("beforeunload", function () {
+    if (socket.readyState === WebSocket.OPEN) {
+        socket.close();
+    }
+});
 
-        const bubble = document.createElement("div");
-        bubble.classList.add("message", "px-3", "py-2", "rounded");
+socket.onmessage = function(e) {
+    const data = JSON.parse(e.data);
 
-        if (data.sender === "{{ request.user.username }}") {
-            wrapper.classList.add("justify-content-end");
-            bubble.classList.add("bg-success-subtle", "text-end");
-            bubble.innerHTML = data.message + " <span class='tick'>✓</span>";
-        } else {
-            wrapper.classList.add("justify-content-start");
-            bubble.classList.add("bg-secondary-subtle");
-            bubble.innerHTML = data.message;
-        }
+    // SAFETY: ignore message if not for this user
+    const currentUserId = "{{ request.user.id }}";
+    const receiverId = "{{ receiver.id }}";
 
-        wrapper.appendChild(bubble);
-        chatBox.appendChild(wrapper);
-        chatBox.scrollTop = chatBox.scrollHeight;
-    };
-
-    function send() {
-        const input = document.getElementById("msg");
-        if (!input.value.trim()) return;
-
-        socket.send(JSON.stringify({
-            message: input.value
-        }));
-
-        input.value = "";
+    if (
+        !(data.sender_id == currentUserId || data.sender_id == receiverId)
+    ) {
+        return;
     }
 
-    document.getElementById("msg").addEventListener("keypress", function(e) {
-        if (e.key === "Enter") {
-            send();
-        }
-    });
+    const wrapper = document.createElement("div");
+    wrapper.classList.add("d-flex", "mb-2");
+
+    const bubble = document.createElement("div");
+    bubble.classList.add("message", "px-3", "py-2", "rounded");
+
+    if (data.sender_id == currentUserId) {
+        wrapper.classList.add("justify-content-end");
+        bubble.classList.add("bg-success-subtle", "text-end");
+        bubble.innerHTML = data.message + " <span class='tick'>✓</span>";
+    } else {
+        wrapper.classList.add("justify-content-start");
+        bubble.classList.add("bg-secondary-subtle");
+        bubble.innerHTML = data.message;
+    }
+
+    wrapper.appendChild(bubble);
+    chatBox.appendChild(wrapper);
+    chatBox.scrollTop = chatBox.scrollHeight;
+};
+
+function send() {
+    const input = document.getElementById("msg");
+    if (!input.value.trim()) return;
+
+    socket.send(JSON.stringify({
+        message: input.value
+    }));
+
+    input.value = "";
+}
+
+document.getElementById("msg").addEventListener("keypress", function(e) {
+    if (e.key === "Enter") {
+        send();
+    }
+});
 </script>
 
 </body>

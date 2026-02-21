@@ -11,6 +11,7 @@ def user_list(request):
     return render(request, 'user_list.html', {'users': users})
 
 
+
 @login_required
 def chat_view(request, user_id):
     receiver = get_object_or_404(User, id=user_id)
